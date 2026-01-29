@@ -11,3 +11,44 @@ Must Create a Modern Data Pipeline with:
     2. Top Salesman in the whole country 
 6. The final Aggregated results mut be in a dedicated DB and API 
 7. Restrictions: a. Python b. Red-Shift c. Hadoop
+
+--- 
+# Stack
+
+## KAKFA
+### terms
+- SINK -> Is the component that consumes data from Kafka and writes it to an external system.
+    - Kafka ->  External system
+- SOURCE -> brings data into kafka
+    - External system -> Kafka
+
+#### Configurations
+- use ACK=all (leads and replicas needs to say OK)
+- Define the Offset commit (short interval - less risk )
+- Longer interval -> more performance -> more risk
+- Make sure the destination is idempotent. (on kafka topics the duplication is normal and expected, the destination needs to know how deal with it)
+
+### kafka connectors
+You can use self-managed Apache Kafka connectors to move data in and out of Kafka.   
+![alt text](image.png)
+https://docs.confluent.io/platform/current/connect/kafka_connectors.html
+
+- Debezium CDC Connector
+    - Debezium connectors capture changes to databases. Each Debezium connector establishes a connection to its source database, changes from one database table are written to a Kafka topic whose name corresponds to the table name
+    - https://debezium.io/documentation/reference/stable/architecture.html
+    - REAL CDC (log based)
+    - Capture INSERT / DELETE / UPDATE
+    - Is not a polling
+- File system / object store
+    - File stream connector 
+        - The FileSource connector reads data from a file and sends it to Apache Kafka
+        - https://docs.confluent.io/platform/current/connect/quickstart.html#write-file-data-with-kconnect
+        - https://docs.confluent.io/platform/current/connect/quickstart.html#write-file-data-with-kconnect
+        - CSV
+        - JSON
+    - Amazon S3
+        - Amazon S3 Source connector reads data exported to S3 and publishes it to an Apache Kafka topic
+        - https://docs.confluent.io/kafka-connectors/s3-source
+- WEB API
+    - The Kafka Connect HTTP Source connector makes HTTP requests to an API, processes JSON responses, and produce those responses to Kafka.
+    - https://docs.confluent.io/kafka-connectors/http-source
