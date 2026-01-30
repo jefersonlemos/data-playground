@@ -15,6 +15,9 @@ Must Create a Modern Data Pipeline with:
 --- 
 # Stack
 
+## CDC 
+CDC (Change Data Capture) is a database design pattern that identifies, records, and streams row-level changes—inserts, updates, and deletes—made to a source database in real-time. It enables efficient, low-latency synchronization of data to downstream systems (data warehouses, data lakes, caches) without overloading the source database with full table scans. 
+
 ## Data Lineage
 Data lineage is the ability to track the full journey of data, tracks what happened to the data.   
 It is observability of the data itself, not just the infrastructure.
