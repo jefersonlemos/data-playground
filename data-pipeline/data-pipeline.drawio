@@ -1,0 +1,158 @@
+<mxfile host="65bd71144e">
+    <diagram name="Modern Data Pipeline (No Hadoop / No Python)" id="0">
+        <mxGraphModel dx="95375" dy="89591" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="7" style="edgeStyle=none;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;movable=0;resizable=0;rotatable=0;deletable=0;editable=0;locked=1;connectable=0;" parent="1" source="db" target="debezium" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="db" value="Relational DB&#xa;(Postgres / Oracle / MySQL)" style="rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf;movable=0;resizable=0;rotatable=0;deletable=0;editable=0;locked=1;connectable=0;" parent="1" vertex="1">
+                    <mxGeometry x="20" y="80" width="240" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="9" style="edgeStyle=none;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;movable=0;resizable=0;rotatable=0;deletable=0;editable=0;locked=1;connectable=0;" parent="1" source="files" target="fileConnector" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="files" value="File System / Object Storage&#xa;(CSV / JSON / S3)" style="rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf;movable=1;resizable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;" parent="1" vertex="1">
+                    <mxGeometry x="20" y="190" width="240" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="11" style="edgeStyle=none;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;movable=0;resizable=0;rotatable=0;deletable=0;editable=0;locked=1;connectable=0;" parent="1" source="api" target="httpConnector" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="api" value="External Web Service&#xa;(REST / WS-*)" style="rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf;movable=0;resizable=0;rotatable=0;deletable=0;editable=0;locked=1;connectable=0;" parent="1" vertex="1">
+                    <mxGeometry x="20" y="300" width="240" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="2" style="edgeStyle=none;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;endArrow=classic;endFill=1;movable=0;resizable=0;rotatable=0;deletable=0;editable=0;locked=1;connectable=0;" parent="1" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="320" y="99.99999999999636" as="sourcePoint"/>
+                        <mxPoint x="260" y="99.99999999999636" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="17" style="edgeStyle=orthogonalEdgeStyle;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;endArrow=none;endFill=0;movable=0;resizable=0;rotatable=0;deletable=0;editable=0;locked=1;connectable=0;" parent="1" source="debezium" target="httpConnector" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="610" y="115"/>
+                            <mxPoint x="610" y="335"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="debezium" value="Debezium CDC&#xa;(Kafka Connect)" style="rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;movable=0;resizable=0;rotatable=0;deletable=0;editable=0;locked=1;connectable=0;" parent="1" vertex="1">
+                    <mxGeometry x="320" y="80" width="260" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="8" style="edgeStyle=none;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;movable=0;resizable=0;rotatable=0;deletable=0;editable=0;locked=1;connectable=0;" parent="1" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="320" y="209.99999999999636" as="sourcePoint"/>
+                        <mxPoint x="260" y="209.99999999999636" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="20" style="edgeStyle=none;html=1;endArrow=none;endFill=0;movable=0;resizable=0;rotatable=0;deletable=0;editable=0;locked=1;connectable=0;" parent="1" source="fileConnector" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="610" y="225" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="fileConnector" value="Kafka Connect&#xa;File System / S3 Source Connector" style="rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;movable=1;resizable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;" parent="1" vertex="1">
+                    <mxGeometry x="320" y="190" width="260" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="10" style="edgeStyle=none;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;movable=0;resizable=0;rotatable=0;deletable=0;editable=0;locked=1;connectable=0;" parent="1" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="320" y="320" as="sourcePoint"/>
+                        <mxPoint x="260" y="320" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="httpConnector" value="Kafka Connect&#xa;HTTP Source Connector" style="rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;movable=0;resizable=0;rotatable=0;deletable=0;editable=0;locked=1;connectable=0;" parent="1" vertex="1">
+                    <mxGeometry x="320" y="300" width="260" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="21" style="edgeStyle=none;html=1;endArrow=none;endFill=0;startArrow=classic;startFill=1;" parent="1" source="kafka" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="610" y="235" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="kafka" value="Apache Kafka cluster (MSK)" style="rounded=1;fillColor=#f8cecc;strokeColor=#b85450;" parent="1" vertex="1">
+                    <mxGeometry x="650" y="190" width="260" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="processing" value="Stream Processing&#xa;Flink / Kafka Streams / Spark SS&#xa;&#xa;Pipeline 1: Top Sales per City&#xa;Pipeline 2: Top Salesman Country" style="rounded=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
+                    <mxGeometry x="1000" y="170" width="420" height="140" as="geometry"/>
+                </mxCell>
+                <mxCell id="lineage" value="Data Lineage&#xa;OpenLineage + Marquez" style="rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;" parent="1" vertex="1">
+                    <mxGeometry x="1000" y="40" width="260" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="obs" value="Observability&#xa;Prometheus + Grafana" style="rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;" parent="1" vertex="1">
+                    <mxGeometry x="1300" y="40" width="300" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="dbFinal" value="Analytical Database&#xa;(ClickHouse / Druid / Postgres)" style="rounded=1;fillColor=#f5f5f5;strokeColor=#666666;" parent="1" vertex="1">
+                    <mxGeometry x="990" y="450" width="320" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="apiLayer" value="API" style="rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="1360" y="450" width="240" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="e1" style="endArrow=block;" parent="1" source="db" target="debezium" edge="1"/>
+                <mxCell id="e2" style="endArrow=block;" parent="1" source="files" target="fileConnector" edge="1"/>
+                <mxCell id="e3" style="endArrow=block;" parent="1" source="api" target="httpConnector" edge="1"/>
+                <mxCell id="e4" style="endArrow=block;" parent="1" source="debezium" target="kafka" edge="1"/>
+                <mxCell id="e5" style="endArrow=block;" parent="1" source="fileConnector" target="kafka" edge="1"/>
+                <mxCell id="e6" style="endArrow=block;" parent="1" source="httpConnector" target="kafka" edge="1"/>
+                <mxCell id="e7" style="endArrow=block;" parent="1" source="kafka" target="processing" edge="1"/>
+                <mxCell id="e8" style="endArrow=block;" parent="1" source="processing" target="dbFinal" edge="1"/>
+                <mxCell id="e9" style="endArrow=block;" parent="1" source="dbFinal" target="apiLayer" edge="1"/>
+                <mxCell id="58" value="File System / Object Storage&#xa;(CSV / JSON / S3)" style="rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf;movable=1;resizable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;" parent="1" vertex="1">
+                    <mxGeometry x="-32980" y="-17200" width="240" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="59" value="Kafka Connect&#xa;File System / S3 Source Connector" style="rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;movable=1;resizable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;" parent="1" vertex="1">
+                    <mxGeometry x="-32680" y="-17200" width="260" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="60" style="edgeStyle=none;html=1;endArrow=none;endFill=0;startArrow=classic;startFill=1;" parent="1" source="61" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="-32390" y="-17155" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="61" value="Apache Kafka cluster (MSK)" style="rounded=1;fillColor=#f8cecc;strokeColor=#b85450;" parent="1" vertex="1">
+                    <mxGeometry x="-32350" y="-17200" width="260" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="62" value="Stream Processing&#xa;Flink / Kafka Streams / Spark SS&#xa;&#xa;Pipeline 1: Top Sales per City&#xa;Pipeline 2: Top Salesman Country" style="rounded=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
+                    <mxGeometry x="-32000" y="-17220" width="420" height="140" as="geometry"/>
+                </mxCell>
+                <mxCell id="63" value="Data Lineage&#xa;OpenLineage + Marquez" style="rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;" parent="1" vertex="1">
+                    <mxGeometry x="-32000" y="-17350" width="260" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="64" value="Observability&#xa;Prometheus + Grafana" style="rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;" parent="1" vertex="1">
+                    <mxGeometry x="-31700" y="-17350" width="300" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="65" value="Analytical Database&#xa;(ClickHouse / Druid / Postgres)" style="rounded=1;fillColor=#f5f5f5;strokeColor=#666666;" parent="1" vertex="1">
+                    <mxGeometry x="-32010" y="-16940" width="320" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="66" value="API" style="rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="-31640" y="-16940" width="240" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="67" value="File System / Object Storage&#xa;(CSV / JSON / S3)" style="rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf;movable=1;resizable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;" parent="1" vertex="1">
+                    <mxGeometry x="-42620" y="-59800" width="240" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="68" value="Kafka Connect&#xa;File System / S3 Source Connector" style="rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;movable=1;resizable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;" parent="1" vertex="1">
+                    <mxGeometry x="-42320" y="-59800" width="260" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="69" style="edgeStyle=none;html=1;endArrow=none;endFill=0;startArrow=classic;startFill=1;" parent="1" source="70" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="-42030" y="-59755" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="70" value="Apache Kafka cluster (MSK)" style="rounded=1;fillColor=#f8cecc;strokeColor=#b85450;" parent="1" vertex="1">
+                    <mxGeometry x="-41990" y="-59800" width="260" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="71" value="Stream Processing&#xa;Flink / Kafka Streams / Spark" style="rounded=1;fillColor=#e1d5e7;strokeColor=#9673a6;align=center;" parent="1" vertex="1">
+                    <mxGeometry x="-41620" y="-59825" width="420" height="140" as="geometry"/>
+                </mxCell>
+                <mxCell id="72" value="Data Lineage ?" style="rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;" parent="1" vertex="1">
+                    <mxGeometry x="-41640" y="-59960" width="260" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="73" value="Observability ?" style="rounded=1;fillColor=#fff2cc;strokeColor=#d6b656;" parent="1" vertex="1">
+                    <mxGeometry x="-41340" y="-59960" width="300" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="74" value="Analytical Database&#xa;(ClickHouse / Druid / Postgres)" style="rounded=1;fillColor=#f5f5f5;strokeColor=#666666;" parent="1" vertex="1">
+                    <mxGeometry x="-41650" y="-59540" width="320" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="75" value="API" style="rounded=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="-41280" y="-59540" width="240" height="80" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

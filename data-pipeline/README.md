@@ -15,6 +15,26 @@ Must Create a Modern Data Pipeline with:
 --- 
 # Stack
 
+## Data Lineage
+Data lineage is the ability to track the full journey of data, tracks what happened to the data.   
+It is observability of the data itself, not just the infrastructure.
+
+- Where the data came from
+- How it was transformed
+- Where it ended up being used
+
+Possible tool:
+- OpenLineage (https://openlineage.io/)
+    - Open standard for lineage events
+    - Works with:
+    - Kafka
+    - Flink
+    - Spark
+    - Airflow
+
+- Marquez (https://marquezproject.ai/)
+    - UI + backend for OpenLineage
+
 ## KAKFA
 ### terms
 - SINK -> Is the component that consumes data from Kafka and writes it to an external system.
