@@ -68,7 +68,7 @@ https://docs.confluent.io/platform/current/connect/kafka_connectors.html
 - File system / object store
     - File stream connector 
         - The FileSource connector reads data from a file and sends it to Apache Kafka
-        - https://docs.confluent.io/platform/current/connect/quickstart.html#write-file-data-with-kconnect
+        - https://docs.confluent.io/platform/current/connect/filestream_connector.html
         - https://docs.confluent.io/platform/current/connect/quickstart.html#write-file-data-with-kconnect
         - CSV
         - JSON
