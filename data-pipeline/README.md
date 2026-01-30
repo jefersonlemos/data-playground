@@ -56,7 +56,7 @@ CDC (Change Data Capture) is a database design pattern that identifies, records,
 
 ### Kafka connectors
 You can use self-managed Apache Kafka connectors to move data in and out of Kafka.   
-![alt text](image.png)
+![alt text](./resources/images/kafka_connectors.png)
 https://docs.confluent.io/platform/current/connect/kafka_connectors.html
 
 - Debezium CDC Connector
