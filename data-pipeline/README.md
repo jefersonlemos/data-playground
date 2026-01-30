@@ -13,20 +13,28 @@ Must Create a Modern Data Pipeline with:
 7. Restrictions: a. Python b. Red-Shift c. Hadoop
 
 --- 
-# Stack
 
-## CDC 
-CDC (Change Data Capture) is a database design pattern that identifies, records, and streams row-level changes—inserts, updates, and deletes—made to a source database in real-time. It enables efficient, low-latency synchronization of data to downstream systems (data warehouses, data lakes, caches) without overloading the source database with full table scans. 
-
-## Data Lineage
-Data lineage is the ability to track the full journey of data, tracks what happened to the data.   
+# Concepts 
+## Data lineage
+Is the ability to track the full journey of data, tracks what happened to the data.   
 It is observability of the data itself, not just the infrastructure.
 
 - Where the data came from
 - How it was transformed
 - Where it ended up being used
 
-Possible tool:
+## CDC 
+CDC (Change Data Capture) is a database design pattern that identifies, records, and streams row-level changes—inserts, updates, and deletes—made to a source database in real-time. It enables efficient, low-latency synchronization of data to downstream systems (data warehouses, data lakes, caches) without overloading the source database with full table scans. 
+
+## KAFKA
+- SINK -> Is the component that consumes data from Kafka and writes it to an external system.
+    - Kafka ->  External system
+- SOURCE -> brings data into kafka
+    - External system -> Kafka
+
+# Stack
+
+## Data Lineage
 - OpenLineage (https://openlineage.io/)
     - Open standard for lineage events
     - Works with:
@@ -39,11 +47,6 @@ Possible tool:
     - UI + backend for OpenLineage
 
 ## KAKFA
-### terms
-- SINK -> Is the component that consumes data from Kafka and writes it to an external system.
-    - Kafka ->  External system
-- SOURCE -> brings data into kafka
-    - External system -> Kafka
 
 #### Configurations
 - use ACK=all (leads and replicas needs to say OK)
@@ -51,7 +54,7 @@ Possible tool:
 - Longer interval -> more performance -> more risk
 - Make sure the destination is idempotent. (on kafka topics the duplication is normal and expected, the destination needs to know how deal with it)
 
-### kafka connectors
+### Kafka connectors
 You can use self-managed Apache Kafka connectors to move data in and out of Kafka.   
 ![alt text](image.png)
 https://docs.confluent.io/platform/current/connect/kafka_connectors.html
