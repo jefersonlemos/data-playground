@@ -1,0 +1,96 @@
+{
+  "partitionToWriteStats" : {
+    "region=BR" : [ {
+      "fileId" : "f2908f9e-553b-406b-abb1-043814c25c61-0",
+      "path" : "region=BR/f2908f9e-553b-406b-abb1-043814c25c61-0_0-23-71_20260716141424781.parquet",
+      "cdcStats" : null,
+      "prevCommit" : "null",
+      "numWrites" : 2,
+      "numDeletes" : 0,
+      "numUpdateWrites" : 0,
+      "numInserts" : 2,
+      "totalWriteBytes" : 435255,
+      "totalWriteErrors" : 0,
+      "tempPath" : null,
+      "partitionPath" : "region=BR",
+      "totalLogRecords" : 0,
+      "totalLogFilesCompacted" : 0,
+      "totalLogSizeCompacted" : 0,
+      "totalUpdatedRecordsCompacted" : 0,
+      "totalLogBlocks" : 0,
+      "totalCorruptLogBlock" : 0,
+      "totalRollbackBlocks" : 0,
+      "fileSizeInBytes" : 435255,
+      "minEventTime" : null,
+      "maxEventTime" : null,
+      "runtimeStats" : {
+        "totalScanTime" : 0,
+        "totalUpsertTime" : 0,
+        "totalCreateTime" : 815
+      }
+    } ],
+    "region=DE" : [ {
+      "fileId" : "629d659b-0af2-41d9-8bc8-efaac5256434-0",
+      "path" : "region=DE/629d659b-0af2-41d9-8bc8-efaac5256434-0_1-23-72_20260716141424781.parquet",
+      "cdcStats" : null,
+      "prevCommit" : "null",
+      "numWrites" : 1,
+      "numDeletes" : 0,
+      "numUpdateWrites" : 0,
+      "numInserts" : 1,
+      "totalWriteBytes" : 435026,
+      "totalWriteErrors" : 0,
+      "tempPath" : null,
+      "partitionPath" : "region=DE",
+      "totalLogRecords" : 0,
+      "totalLogFilesCompacted" : 0,
+      "totalLogSizeCompacted" : 0,
+      "totalUpdatedRecordsCompacted" : 0,
+      "totalLogBlocks" : 0,
+      "totalCorruptLogBlock" : 0,
+      "totalRollbackBlocks" : 0,
+      "fileSizeInBytes" : 435026,
+      "minEventTime" : null,
+      "maxEventTime" : null,
+      "runtimeStats" : {
+        "totalScanTime" : 0,
+        "totalUpsertTime" : 0,
+        "totalCreateTime" : 818
+      }
+    } ],
+    "region=US" : [ {
+      "fileId" : "bcdb02d5-4f59-4370-8c5b-6682cf508001-0",
+      "path" : "region=US/bcdb02d5-4f59-4370-8c5b-6682cf508001-0_2-23-73_20260716141424781.parquet",
+      "cdcStats" : null,
+      "prevCommit" : "null",
+      "numWrites" : 2,
+      "numDeletes" : 0,
+      "numUpdateWrites" : 0,
+      "numInserts" : 2,
+      "totalWriteBytes" : 435254,
+      "totalWriteErrors" : 0,
+      "tempPath" : null,
+      "partitionPath" : "region=US",
+      "totalLogRecords" : 0,
+      "totalLogFilesCompacted" : 0,
+      "totalLogSizeCompacted" : 0,
+      "totalUpdatedRecordsCompacted" : 0,
+      "totalLogBlocks" : 0,
+      "totalCorruptLogBlock" : 0,
+      "totalRollbackBlocks" : 0,
+      "fileSizeInBytes" : 435254,
+      "minEventTime" : null,
+      "maxEventTime" : null,
+      "runtimeStats" : {
+        "totalScanTime" : 0,
+        "totalUpsertTime" : 0,
+        "totalCreateTime" : 816
+      }
+    } ]
+  },
+  "compacted" : false,
+  "extraMetadata" : {
+    "schema" : "{\"type\":\"record\",\"name\":\"sales_record\",\"namespace\":\"hoodie.sales\",\"fields\":[{\"name\":\"sale_id\",\"type\":[\"null\",\"long\"],\"default\":null},{\"name\":\"region\",\"type\":[\"null\",\"string\"],\"default\":null},{\"name\":\"sale_date\",\"type\":[\"null\",\"string\"],\"default\":null},{\"name\":\"amount\",\"type\":[\"null\",\"double\"],\"default\":null}]}"
+  },
+  "operationType" : "UPSERT"
+}

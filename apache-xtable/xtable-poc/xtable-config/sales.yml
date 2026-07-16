@@ -1,0 +1,10 @@
+sourceFormat: HUDI
+targetFormats:
+  - DELTA
+  - ICEBERG
+datasets:
+  -
+    tableBasePath: /lakehouse/hudi/sales
+    tableName: sales
+    namespace: demo
+    partitionSpec: region:VALUE
