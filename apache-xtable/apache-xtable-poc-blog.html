@@ -1,0 +1,672 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Apache XTable PoC: Hudi to Delta and Iceberg Metadata</title>
+  <style>
+    :root {
+      --bg: #f7f8fa;
+      --paper: #ffffff;
+      --text: #1f2933;
+      --muted: #5f6b7a;
+      --border: #d8dee6;
+      --accent: #126c73;
+      --accent-strong: #0b4d57;
+      --code-bg: #111827;
+      --code-text: #e5e7eb;
+      --note-bg: #e8f5f3;
+      --warn-bg: #fff7e6;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.65;
+    }
+
+    header {
+      background: #102a43;
+      color: #f8fafc;
+      padding: 56px 24px 44px;
+      border-bottom: 6px solid var(--accent);
+    }
+
+    .wrap {
+      width: min(1040px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .kicker {
+      margin: 0 0 10px;
+      color: #9bd7d2;
+      font-size: 0.9rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      max-width: 880px;
+      margin: 0;
+      font-size: clamp(2rem, 6vw, 4rem);
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      max-width: 780px;
+      margin: 20px 0 0;
+      color: #d7e2ea;
+      font-size: 1.15rem;
+    }
+
+    main {
+      padding: 32px 0 64px;
+    }
+
+    article {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: clamp(22px, 4vw, 48px);
+      box-shadow: 0 12px 32px rgba(16, 42, 67, 0.08);
+    }
+
+    h2 {
+      margin: 42px 0 12px;
+      color: #102a43;
+      font-size: 1.75rem;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 30px 0 10px;
+      color: #243b53;
+      font-size: 1.2rem;
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 0 0 16px;
+    }
+
+    a {
+      color: var(--accent-strong);
+      font-weight: 650;
+    }
+
+    ul,
+    ol {
+      margin: 0 0 20px 22px;
+      padding: 0;
+    }
+
+    li {
+      margin: 8px 0;
+    }
+
+    code {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 0.92em;
+    }
+
+    p code,
+    li code {
+      background: #edf2f7;
+      border: 1px solid #d8dee6;
+      border-radius: 4px;
+      padding: 1px 5px;
+      color: #243b53;
+    }
+
+    pre {
+      margin: 14px 0 24px;
+      padding: 18px;
+      overflow-x: auto;
+      background: var(--code-bg);
+      color: var(--code-text);
+      border-radius: 8px;
+      line-height: 1.45;
+      border: 1px solid #263244;
+    }
+
+    pre code {
+      font-size: 0.88rem;
+    }
+
+    .note,
+    .warning {
+      margin: 22px 0;
+      padding: 16px 18px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .note {
+      background: var(--note-bg);
+      border-color: #b6ddd8;
+    }
+
+    .warning {
+      background: var(--warn-bg);
+      border-color: #f4d38b;
+    }
+
+    .toc {
+      margin: 24px 0 32px;
+      padding: 20px;
+      background: #f3f6f9;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    .toc h2 {
+      margin-top: 0;
+      font-size: 1.1rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin: 24px 0;
+    }
+
+    .tile {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      background: #fbfcfd;
+    }
+
+    .tile strong {
+      display: block;
+      color: #102a43;
+      margin-bottom: 6px;
+    }
+
+    .diagram {
+      margin: 18px 0 26px;
+      padding: 20px;
+      border-radius: 8px;
+      background: #f6f8fb;
+      border: 1px solid var(--border);
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      white-space: pre;
+      overflow-x: auto;
+      line-height: 1.45;
+      color: #243b53;
+    }
+
+    footer {
+      margin-top: 32px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    @media (max-width: 760px) {
+      header {
+        padding-top: 36px;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      article {
+        border-radius: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <p class="kicker">Lakehouse interoperability tutorial</p>
+      <h1>Apache XTable PoC: Convert One Hudi Table Into Delta and Iceberg Metadata</h1>
+      <p class="subtitle">
+        A practical, from-scratch demo you can use in a presentation to explain how Apache XTable exposes the same lakehouse data through multiple table formats.
+      </p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <article>
+      <p>
+        Apache XTable is a cross-table converter for lakehouse table formats. In plain language, it helps teams write data in one format, such as Apache Hudi, and make that same table readable through other formats, such as Delta Lake and Apache Iceberg.
+      </p>
+
+      <p>
+        This tutorial implements three short PoCs that work well in a presentation:
+      </p>
+
+      <div class="grid">
+        <div class="tile">
+          <strong>PoC 1</strong>
+          Hudi to Delta and Iceberg metadata conversion.
+        </div>
+        <div class="tile">
+          <strong>PoC 6</strong>
+          Show that the conversion is metadata-focused, not a full data copy.
+        </div>
+        <div class="tile">
+          <strong>PoC 9</strong>
+          Run the same aggregate query and compare results.
+        </div>
+      </div>
+
+      <div class="note">
+        <strong>Recommended demo path:</strong> run this locally with Docker first. Your homelab k3s cluster is useful if you want to add MinIO and make the demo look closer to production, but local Docker is easier to rehearse and safer for a live presentation.
+      </div>
+
+      <nav class="toc">
+        <h2>Contents</h2>
+        <ol>
+          <li><a href="#architecture">Architecture</a></li>
+          <li><a href="#prerequisites">Prerequisites</a></li>
+          <li><a href="#setup">Setup from scratch</a></li>
+          <li><a href="#create-hudi">Create the Hudi source table</a></li>
+          <li><a href="#convert">PoC 1: Convert Hudi to Delta and Iceberg metadata</a></li>
+          <li><a href="#metadata">PoC 6: Prove this is metadata-focused</a></li>
+          <li><a href="#query">PoC 9: Query comparison</a></li>
+          <li><a href="#k3s">Optional k3s homelab version</a></li>
+          <li><a href="#demo-script">Presentation script</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="architecture">Architecture</h2>
+
+      <p>
+        The demo starts with a small Hudi table called <code>sales</code>. XTable then generates Delta and Iceberg metadata next to the existing data files.
+      </p>
+
+      <div class="diagram">/lakehouse
+  /hudi/sales
+    .hoodie/           Hudi metadata
+    region=BR/*.parquet
+    region=DE/*.parquet
+    region=US/*.parquet
+    _delta_log/        Delta metadata generated by XTable
+    metadata/          Iceberg metadata generated by XTable</div>
+
+      <p>
+        That file tree is the main visual for the presentation. The Parquet files are the physical data. XTable adds table-format metadata so other engines can understand the same dataset.
+      </p>
+
+      <h2 id="prerequisites">Prerequisites</h2>
+
+      <p>Install these tools on your machine:</p>
+
+      <ul>
+        <li><code>docker</code></li>
+        <li><code>git</code></li>
+        <li><code>unzip</code></li>
+        <li><code>java 11</code> (required by the local XTable build)</li>
+      </ul>
+
+      <p>
+        Apache XTable's README recommends Java 11 for building the project. The README also documents the bundled jar workflow and the YAML configuration used by the converter.
+      </p>
+
+      <p>Validate Docker access before starting:</p>
+
+      <pre><code>docker ps</code></pre>
+
+      <div class="warning">
+        <strong>If Docker reports permission denied for <code>/var/run/docker.sock</code>:</strong>
+        add your user to the Docker group with <code>sudo usermod -aG docker "$USER"</code>, then log out and back in (or run <code>newgrp docker</code>). Confirm the fix with <code>docker ps</code>. Avoid making the Docker socket world-writable.
+      </div>
+
+      <h2 id="setup">Setup From Scratch</h2>
+
+      <p>Create a working directory:</p>
+
+      <pre><code>mkdir xtable-poc
+cd xtable-poc
+mkdir lakehouse scripts xtable-config
+
+# The Spark image runs as a non-root user and must write table files here.
+chmod 0777 lakehouse</code></pre>
+
+      <p>Clone and build Apache XTable:</p>
+
+      <pre><code>git clone https://github.com/apache/incubator-xtable.git
+cd incubator-xtable
+./mvnw install -DskipTests
+cd ..</code></pre>
+
+      <p>Locate and validate the executable utilities jar:</p>
+
+      <pre><code>XTABLE_JAR="$(find incubator-xtable/xtable-utilities/target \
+  -name 'xtable-utilities_*-bundled.jar' -print -quit)"
+
+test -n "$XTABLE_JAR" || {
+  echo "XTable utilities bundled jar was not found. Build XTable first." >&amp;2
+  exit 1
+}
+
+unzip -p "$XTABLE_JAR" META-INF/MANIFEST.MF | grep 'Main-Class'</code></pre>
+
+      <p>
+        The output must include <code>Main-Class: org.apache.xtable.utilities.RunSync</code>. XTable builds several bundled jars, but only the <code>xtable-utilities</code> jar is the command-line converter used in this tutorial.
+      </p>
+
+      <h2 id="create-hudi">Create The Hudi Source Table</h2>
+
+      <p>Create <code>scripts/create_hudi_sales.py</code>:</p>
+
+      <pre><code>from pyspark.sql import SparkSession
+
+spark = (
+    SparkSession.builder
+    .appName("create-hudi-sales")
+    .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+    .getOrCreate()
+)
+
+data = [
+    (1, "BR", "2026-07-01", 100.50),
+    (2, "BR", "2026-07-01", 220.00),
+    (3, "US", "2026-07-02", 80.25),
+    (4, "US", "2026-07-02", 140.00),
+    (5, "DE", "2026-07-03", 99.99),
+]
+
+df = spark.createDataFrame(data, ["sale_id", "region", "sale_date", "amount"])
+
+table_path = "/lakehouse/hudi/sales"
+
+(
+    df.write.format("hudi")
+    .option("hoodie.table.name", "sales")
+    .option("hoodie.datasource.write.recordkey.field", "sale_id")
+    .option("hoodie.datasource.write.precombine.field", "sale_date")
+    .option("hoodie.datasource.write.partitionpath.field", "region")
+    .option("hoodie.datasource.write.hive_style_partitioning", "true")
+    .option("hoodie.datasource.write.table.type", "COPY_ON_WRITE")
+    .mode("overwrite")
+    .save(table_path)
+)
+
+spark.stop()</code></pre>
+
+      <p>Run the Spark job in Docker:</p>
+
+      <pre><code>docker run --rm \
+  -e HOME=/tmp \
+  -e HADOOP_USER_NAME=spark \
+  -v "$PWD/lakehouse:/lakehouse" \
+  -v "$PWD/scripts:/scripts:ro" \
+  apache/spark:3.5.1 \
+  /opt/spark/bin/spark-submit \
+  --conf spark.jars.ivy=/tmp/.ivy2 \
+  --packages org.apache.hudi:hudi-spark3.5-bundle_2.12:0.15.0 \
+  /scripts/create_hudi_sales.py</code></pre>
+
+      <div class="note">
+        <strong>Why set the Ivy path?</strong> The default Spark image may not have a writable <code>/home/spark/.ivy2</code> directory. Using <code>/tmp/.ivy2</code> prevents the dependency-resolution <code>FileNotFoundException</code>. Do not add a numeric <code>--user</code> here: Hadoop login can fail when that UID has no entry in the container's <code>/etc/passwd</code>.
+      </div>
+
+      <p>Inspect the table:</p>
+
+      <pre><code>find lakehouse/hudi/sales -maxdepth 3 -type d | sort
+find lakehouse/hudi/sales -name '*.parquet'</code></pre>
+
+      <p>
+        At this point, you should have a Hudi table with a <code>.hoodie</code> directory and Parquet data files partitioned by region.
+      </p>
+
+      <h2 id="convert">PoC 1: Convert Hudi To Delta And Iceberg Metadata</h2>
+
+      <p>Create <code>xtable-config/sales.yml</code>:</p>
+
+      <pre><code>sourceFormat: HUDI
+targetFormats:
+  - DELTA
+  - ICEBERG
+datasets:
+  -
+    tableBasePath: /lakehouse/hudi/sales
+    tableName: sales
+    namespace: demo
+    partitionSpec: region:VALUE</code></pre>
+
+      <p>Run XTable:</p>
+
+      <pre><code>XTABLE_JAR="$(find incubator-xtable/xtable-utilities/target \
+  -name 'xtable-utilities_*-bundled.jar' -print -quit)"
+
+test -n "$XTABLE_JAR" || {
+  echo "XTable utilities bundled jar was not found. Build XTable first." >&amp;2
+  exit 1
+}
+
+docker run --rm \
+  -v "$PWD/lakehouse:/lakehouse" \
+  -v "$PWD/xtable-config:/xtable-config:ro" \
+  -v "$PWD/$XTABLE_JAR:/xtable.jar:ro" \
+  eclipse-temurin:11 \
+  java -jar /xtable.jar \
+  --datasetConfig /xtable-config/sales.yml</code></pre>
+
+      <p>Now inspect the table again:</p>
+
+      <pre><code>find lakehouse/hudi/sales -maxdepth 2 -type d | sort</code></pre>
+
+      <p>You should now see directories similar to this:</p>
+
+      <pre><code>lakehouse/hudi/sales/.hoodie
+lakehouse/hudi/sales/_delta_log
+lakehouse/hudi/sales/metadata
+lakehouse/hudi/sales/region=BR
+lakehouse/hudi/sales/region=DE
+lakehouse/hudi/sales/region=US</code></pre>
+
+      <p>
+        This is the first key result: XTable generated metadata for Delta and Iceberg from a Hudi source table.
+      </p>
+
+      <h2 id="metadata">PoC 6: Prove This Is Metadata-Focused</h2>
+
+      <p>
+        The best way to explain XTable is to show the physical files. Run:
+      </p>
+
+      <pre><code>find lakehouse/hudi/sales -maxdepth 3 -type f | sort</code></pre>
+
+      <p>Point out the file groups:</p>
+
+      <pre><code>.hoodie/*              Hudi metadata
+_delta_log/*.json      Delta transaction log
+metadata/*.json        Iceberg table metadata
+region=*/...parquet    Shared physical data files</code></pre>
+
+      <p>Then compare sizes:</p>
+
+      <pre><code>du -sh lakehouse/hudi/sales
+du -sh lakehouse/hudi/sales/.hoodie
+du -sh lakehouse/hudi/sales/_delta_log
+du -sh lakehouse/hudi/sales/metadata</code></pre>
+
+      <p>
+        The presentation message is simple: XTable does not create three full copies of the table. The data files remain shared. XTable creates target-format metadata so different engines can interpret the same table.
+      </p>
+
+      <h2 id="query">PoC 9: Query Comparison</h2>
+
+      <p>
+        For the query comparison, run the same aggregate query through Hudi and Delta. The result should match.
+      </p>
+
+      <h3>Query The Hudi Source Table</h3>
+
+      <p>Create <code>scripts/query_hudi.py</code>:</p>
+
+      <pre><code>from pyspark.sql import SparkSession
+
+spark = (
+    SparkSession.builder
+    .appName("query-hudi")
+    .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+    .getOrCreate()
+)
+
+df = spark.read.format("hudi").load("/lakehouse/hudi/sales")
+df.createOrReplaceTempView("sales")
+
+spark.sql("""
+    SELECT region, COUNT(*) AS sale_count, ROUND(SUM(amount), 2) AS total_amount
+    FROM sales
+    GROUP BY region
+    ORDER BY region
+""").show(truncate=False)
+
+spark.stop()</code></pre>
+
+      <p>Run it:</p>
+
+      <pre><code>docker run --rm \
+  -e HOME=/tmp \
+  -e HADOOP_USER_NAME=spark \
+  -v "$PWD/lakehouse:/lakehouse" \
+  -v "$PWD/scripts:/scripts:ro" \
+  apache/spark:3.5.1 \
+  /opt/spark/bin/spark-submit \
+  --conf spark.jars.ivy=/tmp/.ivy2 \
+  --packages org.apache.hudi:hudi-spark3.5-bundle_2.12:0.15.0 \
+  /scripts/query_hudi.py</code></pre>
+
+      <p>Expected result:</p>
+
+      <pre><code>+------+----------+------------+
+|region|sale_count|total_amount|
++------+----------+------------+
+|BR    |2         |320.5       |
+|DE    |1         |99.99       |
+|US    |2         |220.25      |
++------+----------+------------+</code></pre>
+
+      <h3>Query Through Delta Metadata</h3>
+
+      <p>Create <code>scripts/query_delta.py</code>:</p>
+
+      <pre><code>from pyspark.sql import SparkSession
+
+spark = (
+    SparkSession.builder
+    .appName("query-delta")
+    .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
+    .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog")
+    .getOrCreate()
+)
+
+df = spark.read.format("delta").load("/lakehouse/hudi/sales")
+df.createOrReplaceTempView("sales")
+
+spark.sql("""
+    SELECT region, COUNT(*) AS sale_count, ROUND(SUM(amount), 2) AS total_amount
+    FROM sales
+    GROUP BY region
+    ORDER BY region
+""").show(truncate=False)
+
+spark.stop()</code></pre>
+
+      <p>Run it:</p>
+
+      <pre><code>docker run --rm \
+  -e HOME=/tmp \
+  -e HADOOP_USER_NAME=spark \
+  -v "$PWD/lakehouse:/lakehouse" \
+  -v "$PWD/scripts:/scripts:ro" \
+  apache/spark:3.5.1 \
+  /opt/spark/bin/spark-submit \
+  --conf spark.jars.ivy=/tmp/.ivy2 \
+  --packages io.delta:delta-spark_2.12:3.2.0 \
+  /scripts/query_delta.py</code></pre>
+
+      <p>
+        The output should match the Hudi query. That is your clean closing proof: the same source data can be read through another table format after XTable generates the required metadata.
+      </p>
+
+      <div class="warning">
+        <strong>About Iceberg querying:</strong> for a short live demo, I would show Iceberg metadata generation rather than make Iceberg querying the risky part. Querying Iceberg live usually means configuring a Spark Iceberg catalog correctly. That is doable, but it adds setup that can distract from the core XTable story.
+      </div>
+
+      <h2 id="k3s">Optional k3s Homelab Version</h2>
+
+      <p>
+        If you want to use your homelab k3s cluster, use it to show a more realistic lakehouse shape:
+      </p>
+
+      <div class="diagram">k3s
+  MinIO                 S3-compatible object storage
+  Spark job             creates Hudi table
+  Kubernetes Job        runs Apache XTable
+  Spark query job        validates Hudi and Delta reads</div>
+
+      <p>The flow is:</p>
+
+      <ol>
+        <li>Deploy MinIO in k3s.</li>
+        <li>Create a bucket such as <code>lakehouse</code>.</li>
+        <li>Write the Hudi table to <code>s3a://lakehouse/hudi/sales</code>.</li>
+        <li>Run XTable as a Kubernetes Job using the same YAML config, but with S3 paths.</li>
+        <li>Run Spark query jobs against the generated metadata.</li>
+      </ol>
+
+      <p>
+        This is closer to production, but it introduces S3 credentials, Hadoop S3A configuration, service endpoints, and Kubernetes manifests. For a first presentation, I would keep this as an architecture slide and use the local Docker demo live.
+      </p>
+
+      <h2 id="demo-script">Presentation Script</h2>
+
+      <p>Use this sequence during the presentation:</p>
+
+      <ol>
+        <li>Show the Hudi table folders.</li>
+        <li>Run the Hudi aggregate query.</li>
+        <li>Run XTable with the YAML config.</li>
+        <li>Show the new <code>_delta_log</code> and <code>metadata</code> directories.</li>
+        <li>Run the Delta aggregate query.</li>
+        <li>Show that the results match.</li>
+      </ol>
+
+      <p>Useful commands to keep ready:</p>
+
+      <pre><code>find lakehouse/hudi/sales -maxdepth 2 -type d | sort
+find lakehouse/hudi/sales -maxdepth 3 -type f | sort
+du -sh lakehouse/hudi/sales
+du -sh lakehouse/hudi/sales/_delta_log
+du -sh lakehouse/hudi/sales/metadata</code></pre>
+
+      <p>
+        Close with this sentence:
+      </p>
+
+      <blockquote>
+        Apache XTable lets us keep one physical dataset while exposing it through multiple lakehouse table formats. That reduces format lock-in and makes it easier for different engines and teams to work with the same data.
+      </blockquote>
+
+      <h2>References</h2>
+
+      <ul>
+        <li><a href="https://github.com/apache/incubator-xtable">Apache XTable GitHub repository</a></li>
+        <li><a href="https://arxiv.org/abs/2401.09621">XTable in Action: Seamless Interoperability in Data Lakes</a></li>
+      </ul>
+
+      <footer>
+        Prepared as a practical PoC blog post for an Apache XTable presentation.
+      </footer>
+    </article>
+  </main>
+</body>
+</html>
