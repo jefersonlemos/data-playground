@@ -1,1 +1,5 @@
 .ivy2/*
+.*
+.agents/*
+.codex/*
+.claude/*
