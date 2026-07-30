@@ -1,305 +1,556 @@
-# Questions
+# Questions / things to check
+
 Things that came to my mind
+
 1. What about the performance of data translation? How good it is when transforming thousands of GBs of data?
+2. How common are MoR tables / delete vectors in production? This matters because XTable does not support everything from these features.
+3. Should the demo be only local docker or should I show an AWS/Athena path too?
+4. Need to show generated metadata. This is probably the most convincing part of the presentation.
+5. Need to avoid giving the idea that XTable is a magic bidirectional database. It is metadata sync.
 
-# 1. Context
+Quick answers from research:
 
-## From warehouses to transactional data lakes
+- Performance: XTable normally does not rewrite the data files, so it should be much cheaper than copying TBs of data. But the first run/full sync can still be expensive because it needs to inspect the table metadata/files/statistics. Incremental sync is the important performance story.
+- If incremental sync cannot be done safely, XTable falls back to full sync. This is correct but can make runtime unpredictable.
+- Catalog sync is separate from table-format sync. Generating `_delta_log/`, `metadata/`, or `.hoodie/` is not the same thing as registering the table in Glue, HMS, Unity, BigLake, etc.
+- Athena note: XTable docs say Hudi target tables need Hudi 0.14.0, but Athena engine v3 currently supports Hudi 0.12.2, so Athena is not good to validate Hudi target tables. Iceberg/Delta targets are safer for Athena demo.
+- Latest official release in XTable downloads is `0.3.0-incubating`. Do not present `0.4.0` as released unless checking again.
 
-Data architectures have evolved to support larger data volumes and a broader
-range of workloads. Traditional data warehouses offered reliable, high-performance
-analytics for structured data, but they were commonly tied to proprietary storage
-and compute systems. Data lakes introduced cheaper, scalable storage and the
-flexibility to retain structured, semi-structured, and unstructured data in open
-file formats. For analytical data, columnar formats such as Apache Parquet became
-common.
+# Proposed presentation order
 
-However, files alone do not provide table-level guarantees. Managing concurrent
-writes, schema changes, partitions, and historical versions directly on a data
-lake is difficult. Open table formats (OTFs) such as Apache Hudi, Apache Iceberg,
-and Delta Lake address this gap by maintaining a transactional metadata layer
-over the underlying data files. They provide capabilities such as ACID
-transactions, schema evolution, partition management, snapshots, and time
-travel.
+This is the order I think makes more sense after comparing `slides.md` with the ODP.
 
-## A new problem: table-format fragmentation
+1. Title
+2. Context: from warehouses to data lakes
+3. Problem: table-format fragmentation
+4. Why XTable is needed
+5. What XTable is / is not
+6. How XTable works
+7. Architecture
+8. Sync modes and performance - merge into slide 13
+9. Catalog sync and ecosystem integrations - merge into slide 13
+10. When to use XTable
+11. Demo
+12. Competitors / alternatives
+13. Pros and cons, including sync/catalog trade-offs
+14. Trade-offs
+15. Conclusion
 
-Organizations choose a table format according to their workloads, existing
-platform, query engines, and vendor ecosystem. In a large organization, different
-teams may therefore adopt different formats. A team might ingest and maintain a
-table in Hudi, while another engine or platform integrates more naturally with
-Iceberg or Delta Lake.
+ODP changes to do later:
 
-This creates a new interoperability problem. Although these formats often
-reference the same type of physical data files, each one represents table state,
-transactions, schemas, partitions, and statistics differently. Making a table
-available in another format has traditionally required a separate conversion
-pipeline and, in many cases, rewriting or duplicating the data. At scale, that
-means additional compute, storage, synchronization delay, and operational
-complexity.
+- Slide 2 should not show raw markdown (`##`) or empty bullets. Split it into two slides: context and problem.
+- Slide 3 should explain the solution, not only say "Why XTable is needed".
+- Slide 4 should explain XTable with one simple image and a short "is / is not" message.
+- Slide 5 should have a simplified architecture diagram, not a screenshot of research notes.
+- Remove or skip the standalone sync/performance and catalog/integrations slides.
+- Merge the important sync/catalog points into the Pros and Cons slide, so the deck is lighter.
+- Move competitors after the audience already understands what XTable does.
+- Keep the demo before competitors or after limitations depending on timing. I prefer before competitors, because the demo makes the rest more concrete.
 
-## Why XTable is needed
+# 1. Title
 
-The need is not for another table format, but for a way to make the same data
-readable through multiple table-format ecosystems. Apache XTable (Incubating)
-addresses this by translating the metadata of one source format into one or more
-target formats. The physical data files remain in place, while compatible
-engines can interpret them through Hudi, Iceberg, or Delta Lake metadata.
+## Slide content
 
-This approach reduces the cost and duplication associated with conventional
-format conversion, while allowing an organization to keep one authoritative
-source format and expose secondary representations for other consumers. It does
-not make every format-specific feature interchangeable, and the secondary
-metadata remains synchronized rather than independently writable.
+Apache XTable
 
-## Sources and further reading
+Metadata interoperability for Apache Hudi, Apache Iceberg, and Delta Lake
+ 
 
-- https://xtable.apache.org/
-- https://xtable.apache.org/docs/features-and-limitations/
-- https://xtable.apache.org/docs/how-to/
-- https://xtable.apache.org/blog/OneTable-is-now-Apache-XTable/
-- https://iceberg.apache.org/docs/latest/
-- https://aws.amazon.com/blogs/big-data/run-apache-xtable-in-aws-lambda-for-background-conversion-of-open-table-formats/
-- https://dipankar-tnt.medium.com/introducing-multi-catalog-sync-in-apache-xtable-incubating-unlocking-catalog-interoperability-8420f0f0223b
+# 2. Context: Problem statement
 
-# 2. Explain the problem
+## Slide content
 
-
-# what is xtable
-
-XTable is best understood as a metadata interoperability layer with one authoritative source table, not as an ETL engine or a bidirectional multi-writer database.
-
-Apache XTable™ simplifies data lake operations by leveraging a common model for table representation. This allows users to write data in one format while still benefiting from integrations and features available in other formats. For instance, Apache XTable™ enables existing Hudi users to seamlessly work with Databricks's Photon Engine or query Iceberg tables with Snowflake. Creating transformations from one format to another is straightforward and only requires the implementation of a few interfaces, which we believe will facilitate the expansion of supported source and target formats in the future.
-
-![alt text](image-1.png)
-    Apache XTable™ provides cross-table omni-directional interop between lakehouse table formats
-    Apache XTable™ is NOT a new or separate format, Apache XTable™ provides abstractions and tools for the translation of lakehouse table format metadata
-    Apache XTable™ is formerly known as OneTable
+- Warehouses gave governed analytics, but usually inside proprietary storage/compute.
+- Data lakes made storage cheaper and open.
+- Open table formats added transactional table semantics
+- Parquet became a common physical file format for analytical data.
+- Different teams and engines adopted different formats
+- Converting formats created duplication, cost, and synchronization work
+- The problem is not storing the data. The problem is making the same table readable across ecosystems without copying it."
 
 
-# - check: When to use
+## Speaker notes
 
-Apache XTable™ can be used to easily switch between any of the table formats or even benefit from more than one simultaneously. Some organizations use Apache XTable™ today because they have a diverse ecosystem of tools with polarized vendor support of table formats. Some users want lightning fast ingestion or indexing from Hudi and photon query accelerations of Delta Lake inside of Databricks. Some users want managed table services from Hudi, but also want write operations from Trino to Iceberg. Regardless of which combination of formats you need, Apache XTable™ ensures you can benefit from all 3 projects.
+Data architectures evolved because the old warehouse model did not fit every workload or every scale/cost profile. Data lakes solved part of the problem by using open storage and open file formats, especially Parquet.
+
+But a folder of Parquet files is not a real table by itself. You still need a way to manage concurrent writes, schema changes, partitions, deletes, historical versions, and query planning. That is why Hudi, Iceberg, and Delta Lake exist.
+
+- Different teams choose different table formats.
+- Different engines and vendors support different formats better.
+- Same Parquet files do not mean same table metadata.
+- Without interoperability, teams either standardize too hard or duplicate/convert data.
+- At scale this means storage cost, compute cost, freshness delay, and more pipelines to operate.
+
+The real problem is table-level compatibility, not file-level compatibility. The data files may be Parquet, but Hudi, Iceberg, and Delta Lake describe table state differently.
+
+Each format has its own metadata model for commits, snapshots, schemas, partitions, statistics, deletes, and history. So a query engine that understands Iceberg does not automatically understand a Hudi table just because the files are Parquet.
+
+## What to add in the ODP
+
+- This should be its own slide, not mixed with the history slide.
+- A good visual:
+  - Same data files in the middle
+  - Hudi / Iceberg / Delta metadata around it
+  - Engines around those metadata formats
+
+# X. Solving the problem
+
+## Slide content
+
+- The need is not another table format.
+- The need is to make one physical dataset readable through multiple table-format ecosystems.
+- Apache XTable translates metadata from one source format into one or more target formats.
+- The physical data files stay in place.
+- One format remains authoritative; the other formats are synchronized views.
+
+## Speaker notes
+
+XTable's core idea is simple: keep one copy of the data, but generate the metadata needed by other table formats.
+
+So if the source table is Hudi, XTable can generate Iceberg metadata and Delta log metadata that point to the same physical files. Consumers can then read through the format their engine supports best.
+
+This does not mean every feature is interchangeable. It also does not mean all formats should write independently to the same files.
 
 
-# how it solves the problem
+# 3. Apache XTable - Introduction
 
-At a fundamental level, Hudi, Iceberg, and Delta Lake share similarities in their structure. When data is written to a distributed file system, these formats consist of a data layer, typically Parquet files, and a metadata layer that provides the necessary abstraction (see the following diagram). XTable uses these commonalities to enable interoperability between formats.
-Apache XTable enables seamless conversion between these formats without data duplication or alterations, simply updating the metadata. 
+## Slide content
 
-![alt text](image.png)
+- Apache XTable provides omni-directional interoperability across lakehouse table formats.
+- It is NOT a new table format.
+- It provides abstractions and tools for translating lakehouse table format metadata.
+- It was formerly known as OneTable.
+- Supported core table formats today: Hudi, Iceberg, Delta Lake.
 
-how it works
+## Speaker notes
 
-The synchronization process in XTable works by translating table metadata using the existing APIs of these table formats. It reads the current metadata from the source table and generates the corresponding metadata for one or more target formats. This metadata is then stored in a designated directory within the base path of your table, such as _delta_log for Delta Lake, metadata for Iceberg, and .hoodie for Hudi. This allows the existing data to be interpreted as if it were originally written in any of these formats.
+XTable is best understood as a metadata interoperability layer with one authoritative source table.
 
-The most important architectural point is that XTable does not normally convert or rewrite the underlying records. It translates table-format metadata so the same physical data files can be interpreted as Hudi, Iceberg, or Delta tables. The official XTable tutorial confirms that this happens without copying or moving the underlying files.
+It is not an ETL engine.
+It is not a storage format.
+It is not a distributed scheduler.
+It is not a complete bidirectional multi-writer database.
 
-Apache XTable™ reads the existing metadata of your table and writes out metadata for one or more other table formats by leveraging the existing APIs provided by each table format project. The metadata will be persisted under a directory in the base path of your table (_delta_log for Delta, metadata for Iceberg, and .hoodie for Hudi). This allows your existing data to be read as though it was written using Delta, Hudi, or Iceberg. For example, a Spark reader can use spark.read.format(“delta | hudi | iceberg>”).load(“path/to/data”). 
+This distinction matters because it explains both the benefit and the limitations.
 
-### 💡 Idea: Would be great understand and show the generated metadata
+## What to add in the ODP
 
-incremental: XTable writes XTABLE_METADATA into the target so the next run can continue incrementally.
+- Add a small "is / is not" block:
+  - Is: metadata translator
+  - Is not: new format, data copy engine, multi-writer coordination layer
 
-### 💡 Idea: Would be nice work and demonstrate the catalog
-POC: https://dipankar-tnt.medium.com/introducing-multi-catalog-sync-in-apache-xtable-incubating-unlocking-catalog-interoperability-8420f0f0223b
+# 4. How XTable solves the problem
 
+## Slide content
 
-### 💡 Idea: Demonstrate an automated sync and conversion using lambda
-POC: https://aws.amazon.com/blogs/big-data/run-apache-xtable-in-aws-lambda-for-background-conversion-of-open-table-formats/
+- Hudi, Iceberg, and Delta all combine data files + table metadata.
+- XTable reads the source table metadata.
+- It creates equivalent target metadata using the target format APIs.
+- Target metadata is written under the table base path:
+  - `_delta_log/` for Delta
+  - `metadata/` for Iceberg
+  - `.hoodie/` for Hudi
+- Query engines then read the same physical files through their preferred format.
 
-Multi-Catalog Sync using Apache XTable
-![alt text](image-6.png)
+## Speaker notes
 
-or example, a table registered in Hive Metastore (HMS) can now be made available in AWS Glue Data Catalog with a single configuration and execution step.
+At a fundamental level, the formats share a similar shape: Parquet data files plus a metadata layer. XTable uses those commonalities.
 
+The most important architectural point: it normally does not convert or rewrite the records. It translates metadata so the same files can be interpreted as another table format.
 
-n the most basic sense, a catalog is an organized inventory of data assets within an organization. It keeps track of all tables and their metadata, table names, schemas, and references to specific metadata associated with each table’s format
-Optionally register the table in external catalogs
-Generating metadata/ or _delta_log/ does not necessarily register the table in Glue, HMS, or another catalog. Catalog synchronization is a subsequent, optional step.
+Good sentence to say:
 
-Beyond vendor lock-in, another growing operational challenge is the fragmentation of catalog usage within organizations. Different teams may rely on distinct catalogs as part of the ecosystem they are part of — sometimes even different implementations of the same specification, such as the Iceberg REST Catalog.
+"The conversion is not data-to-data. It is metadata-to-metadata."
 
-The project currently documents HMS and AWS Glue support,
-# - Architecture
+## What to add in the ODP
 
-![alt text](image-5.png)
+- Show before/after:
+  - before: `.hoodie/` + Parquet files
+  - after: `.hoodie/` + `metadata/` + `_delta_log/` + same Parquet files
+- Add a tiny example:
 
-![alt text](image-2.png)
-![alt text](image-3.png)
-# - Competitors
-Delta Lake Uniform
+```text
+spark.read.format("iceberg").load("path/to/table")
+spark.read.format("delta").load("path/to/table")
+spark.read.format("hudi").load("path/to/table")
+```
 
-![alt text](image-4.png)
+# 5. Architecture
 
-# - Pros and Cons
+## Slide content
 
-## Pros
+```text
+CLI / REST service
+      |
+      v
+ConversionController
+      |
+      +--> Source adapter
+      |       reads source table metadata
+      |
+      +--> Neutral internal model
+      |       schema + partitions + files + stats + commit state
+      |
+      +--> Target adapters
+              write Iceberg / Delta / Hudi metadata
+```
 
-No data duplication
+## Speaker notes
 
-XTable normally writes metadata rather than copying or rewriting table data. This is faster and substantially cheaper for large tables.
+The important design choice is the neutral internal model. Without it, every format would need direct converters to every other format.
 
-Cross-engine interoperability
-
-A Hudi-ingested dataset can be exposed through Iceberg or Delta metadata to engines that support those formats better.
-
-Format-neutral core
-
-The internal model prevents every format from needing direct converters to every other format:
-
+```text
 Without neutral model: N * (N - 1) converters
 With neutral model:    N sources + N targets
-Incremental synchronization
+```
 
-After the initial snapshot, XTable can process only new source commits, reducing filesystem listing and metadata-generation work.
+The controller coordinates extraction, sync mode, target creation, and optional catalog sync. Source and target logic are isolated behind adapters.
 
-Safe fallback
+## What to add in the ODP
 
-When Hudi's retained timeline is insufficient, XTable detects that and performs a complete snapshot sync instead of applying an incomplete delta.
+- Do not use `image-4.png` as-is. It is too much like a screenshot from notes.
+- `image-2.png` and `image-3.png` are useful references, but the final slide should be redrawn with larger text.
+- Keep this slide conceptual, not code-level.
 
-Preserves useful statistics
+# 8. Sync modes and performance - merge into slide 13
 
-Partition values, record counts, and column statistics are translated so target engines can perform metadata and file pruning.
+## Slide content moved
 
-Extensible adapter interfaces
+Do not keep this as a standalone slide in the simplified version.
 
-New targets implement ConversionTarget; source-specific logic remains isolated behind ConversionSource.
+Keep only the key message for slide 13:
 
-Per-target failure isolation
+- XTable can use incremental sync, so regular syncs do not need to rebuild everything.
+- If incremental sync is not safe, XTable falls back to full sync.
+- This is good for correctness, but it can make runtime more expensive/unpredictable.
+- Sync is not magic freshness; the target metadata updates when the sync job runs.
 
-Multiple targets can be synchronized in one run, and one target's error does not necessarily prevent other formats from completing.
-- Sync 
-Apache XTable™ (Incubating) provides two sync modes, "incremental" and "full." The incremental mode is more lightweight and has better performance, especially on large tables. If there is anything that prevents the incremental mode from working properly, the tool will fall back to the full sync mode.
+## Speaker notes
 
-- Synchronizing table format metadata in external catalogs (CatalogSync)
-In addition to synchronizing table format metadata, Apache XTable™ (Incubating) now allows users to synchronize metadata for tables across multiple external catalogs continuously and incrementally. This reduces friction by eliminating the manual step of registering tables in multiple catalogs and enhances flexibility by avoiding catalog lock-in. HMS and AWS Glue are the two catalogs supported right now, support for other catalogs (Unity, Apache Polaris, Apache Gravitino, DataHub) coming soon.
+This is where I should answer the "thousands of GBs" question.
 
-- Apache XTable™ (Incubating) synced tables behave the similarly to native tables which means you do not need any additional configurations on query engines' side to work with tables synced by Apache XTable™ (Incubating). 
+The good part:
 
-### 💡 Idea: Make a POC with Querying from Amazon Athena ? to validate the above topic
+- It does not copy/rewrite TBs of Parquet data in the normal path.
+- Incremental sync should be much cheaper than full conversion because it only handles new commits.
 
-### 💡 Idea: Make their POC https://xtable.apache.org/docs/demo/docker
+The careful part:
 
-## Cons
+- The first sync still needs a snapshot of the table.
+- Full fallback can be expensive for huge tables/object stores.
+- Column statistics and metadata extraction can still cost time.
+- If table cleaning/retention removed history needed for incremental sync, XTable chooses correctness and falls back to full.
 
-Unstructured data: Apache XTable is not designed to handle unstructured data.
-Supported views: Apache XTable only supports Copy-on-Write or Read-Optimized views of tables.
-Hudi and Iceberg MoR tables: Apache XTable does not support Hudi and Iceberg MoR tables.
-Delta Delete Vectors: Apache XTable does not support Delta Delete Vectors
+## What to add in the ODP
 
-It is not complete semantic conversion
+- Remove this standalone slide or keep it only as backup.
+- The simplified version uses one row in slide 13:
+  - `Sync` / `Incremental sync keeps regular metadata work smaller` / `Target metadata can lag, and full fallback can be expensive`
 
-Only metadata representable by the internal model and target format is translated. Format-specific features can be lost.
+# 9. Catalog sync and integrations - merge into slide 13
 
-No complete Hudi Merge-on-Read conversion
+## Slide content moved
 
-Merge-on-Read tables expose only their base-file/read-optimized state. Uncompacted changes in Hudi log files will not appear in the target view.
+Do not keep this as a standalone slide in the simplified version.
 
-Delete-vector limitations
+Keep only the key message for slide 13:
 
-Delta and Iceberg deletion vectors are not currently represented. The documentation limits support to Copy-on-Write or read-optimized views. See the official limitations.
+- Table-format sync creates the target metadata files.
+- Catalog sync registers or updates those tables in external catalogs.
+- This reduces manual registration work.
+- It still needs catalog configuration, credentials, scheduler, and monitoring.
 
-One authoritative writer is effectively required
+## Speaker notes
 
-The source format should remain authoritative. Independently writing through Hudi, Iceberg, and Delta metadata over the same files risks divergent histories and conflicting lifecycle operations.
+This is a second fragmentation problem. Even if the table metadata exists, consumers often discover/query tables through catalogs.
 
-Partition interpretation may require manual configuration
+Generating `metadata/` or `_delta_log/` does not necessarily register the table in Glue, HMS, Unity Catalog, or another catalog. XTable separates these concerns:
 
-Hudi partition transforms sometimes require partitionSpec because directory paths do not retain enough information to infer the transformation reliably.
+- TableFormatSync: create the table-format metadata
+- CatalogSync: register/sync table metadata across catalogs
 
-Schema edge cases are difficult
+## What to add in the ODP
 
-Field IDs, list encoding, generated columns, map-key evolution, requiredness, and format-specific type rules do not map perfectly.
+- Remove this standalone slide or keep it only as backup.
+- The simplified version uses one row in slide 13:
+  - `Catalogs` / `CatalogSync can register/update target tables` / `Catalogs, credentials, and monitoring are still operational work`
 
-Metadata synchronization is asynchronous
+# 10. When to use XTable
 
-Target formats lag behind the source until the next XTable execution. Continuous mode narrows this window but does not make the formats one atomic transaction.
+## Slide content
 
-Full fallback can be expensive
+Use XTable when:
 
-When incremental history is unavailable, XTable must list and compare the entire table. This becomes costly for large tables or object stores.
+- You already have data in Hudi, Iceberg, or Delta.
+- Another team/tool needs a different table format.
+- You want one physical copy of the data.
+- You want to avoid rewrite-heavy conversion pipelines.
+- You accept one authoritative writer/source format.
+- You can operate periodic or continuous metadata sync.
 
-Operational complexity remains
+Do not use XTable when:
 
-Operators still need storage credentials, compatible format libraries, retention settings, catalog registration, monitoring, and scheduling.
+- You need every format-specific feature to be semantically identical.
+- Multiple engines need to write independently through different formats.
+- Your tables depend on unsupported MoR/log/delete-vector behavior.
+- You want a complete job orchestration platform.
 
-The REST service is relatively thin
+## Speaker notes
 
-The REST layer delegates directly to the same controller. It is not a complete job-control platform with durable queues, rich history, distributed scheduling, or a management UI.
+Good framing:
 
-almost 3 years old project
-latest version is 0.3.0-incubating but 0.4.0-incubating-rc1 is on the way
-still a very small community 
+"XTable is useful when the organization is heterogeneous but the data should not be duplicated."
 
-1. Hudi and Iceberg MoR tables not supported
-2. Delta Delete Vectors are not supported
-3. Synchronized transaction timestamps
-With Apache XTable™ you pick one primary format and one or more secondary formats. The write operations with the primary format work as normal. Apache XTable™ than translates the metadata from the primary format to the secondaries. When committing the metadata of the secondary formats, the timestamp of the commit will not be the exact same timestamp as shown in the primary.
+It is strongest at read interoperability. It is not trying to replace the table formats themselves.
 
-- Only Copy-on-Write or Read-Optimized views of tables are currently supported. This means that only the underlying parquet files are synced but log files from Hudi and delete vectors from Delta and Iceberg are not captured by the sync
+## What to add in the ODP
 
-- Check this: I need to know how complex is it, how to fix, if production data usually has these things
+- This can be a decision slide.
+- Use two columns: "Good fit" and "Bad fit".
 
-Hudi
+# 11. Demo
 
-    Hudi 0.14.0 is required when reading a Hudi target table. Users will also need to enable
-        the metadata table (hoodie.metadata.enable=true) and
-        hive style partitioning (hoodie.datasource.write.hive_style_partitioning=true) wherever applicable when reading the data.
-    Be sure to enable parquet.avro.write-old-list-structure=false for proper compatibility with lists when syncing from Hudi to Iceberg.
-    When using Hudi as the source for an Iceberg target, you may require field IDs set in the parquet schema. To enable that, follow the instructions here.
+## Slide content
 
-Delta
+Demo goal:
 
-    When using Delta as the source for an Iceberg target, you may require field IDs set in the parquet schema. To enable that, follow the instructions for enabling column mapping here.
-    When Delta is the source, Generated Columns are not synced to the target schema. For tables that are partitioned on Generated Columns, there is limited support. For example, we support date functions like transforming a timestamp to yyyy-MM-dd format. Please file a GitHub issue or pull-request for any cases that you think should be supported.
+- Create or use one source table.
+- Run XTable sync to generate target metadata.
+- Show the generated metadata directories.
+- Query the same data through another table format.
 
+Best demo path:
 
-# - Tradeoffs
+1. Use the official Docker demo if time is short.
+2. Show local files before/after sync.
+3. Show one query through the source format and one through target format.
+4. If using AWS, prefer Iceberg/Delta target for Athena validation.
 
-delta lake
-- Delta Lake Uniform is a one-directional conversion from Delta Lake to Apache Hudi or Apache Iceberg. Uniform is also governed inside the Delta Lake repo. 
+## Speaker notes
 
-xtable
+What I want to prove in the demo:
 
-- Apache XTable™ provides abstraction interfaces that allow omni-directional interoperability across Delta, Hudi, Iceberg, and any other future lakehouse table formats such as Apache Paimon. Apache XTable™ is a standalone github project that provides a neutral space for all the lakehouse table formats to constructively collaborate together.
+- The data files are not duplicated.
+- New metadata appears next to the same data.
+- A query engine can use the generated metadata.
 
-Metadata-only speed versus semantic completeness
+Important: do not overcomplicate the demo with too many engines. The demo should validate the core idea, not become an infrastructure tutorial.
 
-Reusing existing files avoids expensive rewrites, but XTable cannot translate information that exists only in unsupported logs, delete vectors, indexes, or format-specific metadata.
+## What to add in the ODP
 
-Neutral model simplicity versus lowest-common-denominator behavior
+- Keep demo slide as a checklist.
+- Add one screenshot of generated directories:
 
-InternalTable makes the system extensible, but any format feature that cannot fit the shared model needs an extension or is omitted.
+```text
+table/
+  .hoodie/
+  _delta_log/
+  metadata/
+  city=NYC/*.parquet
+```
 
-Incremental performance versus retained-history dependency
+- Add a second screenshot/query output only if it is clean.
 
-Incremental sync is efficient only while the source timeline and cleaned files contain enough history. More aggressive Hudi cleaning saves storage but causes more full XTable synchronizations.
+# 12. Competitors / alternatives
 
-Multiple readable formats versus single-writer discipline
+## Slide content
 
-Several query engines can read the same data through their preferred format, but allowing all of them to write makes ownership and conflict resolution ambiguous.
+Delta Lake UniForm:
 
-Shared physical files versus coordinated lifecycle management
+- Generates Iceberg/Hudi-readable metadata for Delta tables.
+- Strong option if Delta is already the source of truth.
+- More Delta-centered and governed inside Delta Lake.
+- Iceberg/Hudi side should be treated as read-only.
 
-Storage use is minimized, but vacuuming or deleting a file through one format can break every other format whose metadata still references it. Data-file deletion policies must therefore be controlled centrally.
+Apache XTable:
 
-Preserved commit history versus exact historical equivalence
+- Standalone Apache project.
+- Designed as a neutral space between table formats.
+- Omni-directional across Hudi, Iceberg, Delta, and future formats.
+- Better fit when the source of truth is not always Delta.
 
-XTable creates corresponding target commits and records source identifiers, but timestamps, snapshot IDs, and transaction boundaries are target-specific. Histories are analogous, not identical.
+Other alternatives:
 
-Automatic fallback versus unpredictable runtime
+- Standardize the company on one table format.
+- Rewrite/convert data into another format.
+- Maintain duplicated datasets/pipelines.
+- Rely on each query engine's native support.
 
-Falling back to a full snapshot favors correctness, but a normally small incremental job can suddenly become a large filesystem scan.
+## Speaker notes
 
-Multi-target fan-out versus no cross-target atomicity
+The comparison should be fair.
 
-Hudi-to-Iceberg may succeed while Hudi-to-Delta fails. This improves availability but means consumers can temporarily see different source versions depending on their selected format.
+If the organization is all-in on Delta, UniForm may be a simpler choice. If the organization has mixed source formats or wants a neutral interoperability layer, XTable is more general.
 
-Target-native metadata versus compatibility constraints
+The bigger decision is not just "XTable versus UniForm". It is:
 
-Native Iceberg manifests and Delta actions provide broad engine compatibility, but their schemas, partition semantics, field IDs, and protocols must remain within what both the original files and target readers support.
+- one format standard
+- metadata interoperability
+- data duplication/conversion
 
+## What to add in the ODP
 
+- Move competitors later, after architecture/sync.
+- Do not use a random screenshot for competitors. Use a simple table:
 
+```text
+Option              Best when                         Risk
+XTable              mixed formats                     sync/semantic limits
+Delta UniForm       Delta is source of truth          Delta-centered
+Rewrite pipeline    need exact converted dataset      cost + freshness delay
+One standard        strong governance control         less flexibility
+```
 
+# 13. Pros and cons
+
+## Slide content
+
+| Topic | Pros | Cons |
+|---|---|---|
+| Data movement | Avoids copying or rewriting the data files in the normal path | It only translates metadata, so unsupported table semantics are not preserved |
+| Read interoperability | Exposes one table as Hudi, Iceberg, or Delta for different engines | It is not a multi-writer layer; one format should remain authoritative |
+| Large table sync | Incremental sync can make recurring updates much cheaper | Missing/unsafe history can force a full sync and increase runtime |
+| Catalog operations | CatalogSync can reduce manual registration work across catalogs | Credentials, catalog configs, scheduling, and monitoring are still required |
+| Feature support | Works well for common COW/read-optimized table views | MoR/log files, delete vectors, and some format-specific features are limited |
+
+## Speaker notes
+
+This is the main pros and cons slide. Keep it focused on XTable itself, not on competitors.
+
+The positive story is simple: XTable can reduce data duplication and expose one physical dataset through multiple table-format ecosystems.
+
+The careful story is also important: it is still metadata synchronization. It needs a source of truth, scheduled sync, operational ownership, and awareness of unsupported features.
+
+Good sentence to say:
+
+"XTable is useful because it avoids rewriting the data, but that also means it cannot translate every table-format semantic."
+
+### Plain-language explanation for the limitations
+
+1. **Table semantics:** XTable can share the same data between formats, but a special feature used by one format may not exist in another.
+2. **Multi-format writes:** One format remains the source of truth; the others are generated read views.
+3. **Sync:** XTable usually updates only what changed. If it cannot safely find those changes, it must review the whole table again.
+4. **COW / read-optimized view:** Copy-on-Write (COW) stores data as complete files that are replaced when something changes. A read-optimized view reads only those completed files, ignoring temporary change files. This makes reading simpler and faster, though very recent changes may not appear until they are merged into the main files. XTable works best with these stable, completed files.
+5. **Advanced updates:** Merge-on-Read (MoR) keeps recent changes separately and combines them with the main data during reading. Delete vectors are notes that say “do not show this row” without immediately changing the original file. These approaches can make updates faster, but formats handle them differently, so XTable cannot always share them perfectly.
+
+## What to add in the ODP
+
+- Replace the old pros/cons placeholder with this table.
+- Use 5 rows only.
+- Columns should be `Topic`, `Pros`, and `Cons`.
+- Merge the previous sync slide and catalog slide into the `Large table sync` and `Catalog operations` rows.
+- Use a visual table, not two long bullet columns.
+
+# 14. Trade-offs
+
+## Slide content
+
+| Trade-off | What you gain | What you accept |
+|---|---|---|
+| Metadata-only sync | Faster and cheaper than rewriting data | Less complete than full format conversion |
+| Multiple readable formats | More engine/vendor flexibility | Single-writer/source-of-truth discipline |
+| Incremental sync | Smaller regular sync work | Depends on retained source history |
+| One copy of data | Lower storage and fewer pipelines | File lifecycle must be coordinated |
+
+## Speaker notes
+
+Keep this slide shorter than the pros/cons slide. It is here only to make the engineering trade-offs explicit.
+
+If slide 13 is the practical pros/cons, slide 14 is the short technical summary:
+
+- speed vs completeness
+- interoperability vs write discipline
+- incremental sync vs retained-history dependency
+- one copy of data vs lifecycle coordination
+
+## What to add in the ODP
+
+- Use this as a smaller follow-up slide.
+- Do not spend much time here; the focus should remain slide 13.
+
+# 15. Conclusion
+
+## Slide content
+
+Apache XTable is a metadata interoperability layer.
+
+It helps expose one physical dataset through multiple table-format ecosystems without rewriting the data files.
+
+Best fit:
+
+- mixed lakehouse environments
+- multiple engines/vendors
+- one authoritative source table
+- read interoperability
+
+Main caution:
+
+- it is not full semantic equivalence
+- it is not independent multi-writer
+- unsupported table features still matter
+
+## Speaker notes
+
+Closing sentence:
+
+"XTable is not trying to hide the differences between Hudi, Iceberg, and Delta. It gives us a practical bridge when those differences exist in the same organization."
+
+# Appendix: useful details for presentation
+
+## Supported formats / status
+
+- Current core formats: Apache Hudi, Apache Iceberg, Delta Lake.
+- Apache XTable is incubating at the ASF and was renamed from OneTable.
+- Incubation started on 2024-02-11 according to Apache Incubator.
+- Latest official release listed in XTable downloads: `0.3.0-incubating`.
+- Release 0.3.0 added CatalogSync interfaces, Glue/HMS sync, continuous sync using `RunSync`, restore/rollback support across all three formats, and more table-format sync improvements.
+
+## Integrations that are worth mentioning
+
+Official docs include:
+
+- Catalogs: HMS, AWS Glue, Unity Catalog, BigLake Metastore
+- Query engines/platforms: Athena, Redshift Spectrum, Spark, BigQuery, Fabric, Presto, Snowflake, StarRocks, Trino
+- Docker demo
+
+Potential talk examples:
+
+- Hudi ingestion + Iceberg query in Snowflake
+- Hudi/Iceberg source + Delta target for Databricks Unity Catalog
+- Glue catalog + Athena for query validation
+- Background conversion with AWS Lambda or scheduled Airflow/MWAA
+
+## Accuracy notes
+
+- XTable docs say metadata is persisted under `_delta_log` for Delta, `metadata` for Iceberg, and `.hoodie` for Hudi.
+- Docs say full and incremental sync modes exist. Incremental is more lightweight and better for large tables, but XTable falls back to full if incremental cannot work properly.
+- Docs say TableFormatSync includes data files plus column stats and partition metadata, source schema updates reflected in target metadata, and target metadata maintenance.
+- Docs say CatalogSync can continuously/incrementally sync metadata across catalogs and currently documents HMS/AWS Glue as supported, with Unity, Apache Polaris, Apache Gravitino, and DataHub mentioned as future work in the features page.
+- Docs say only Copy-on-Write or Read-Optimized views are currently supported. Hudi log files and Delta/Iceberg delete vectors are not captured by sync.
+- Docs say Hudi target reads require Hudi 0.14.0 and some settings like `hoodie.metadata.enable=true` and hive style partitioning where applicable.
+- Docs say generated columns from Delta source are not synced to target schema, with limited support for partitioning on generated columns.
+- Official Athena integration page says Athena engine v3 supports Hudi 0.12.2, so Hudi target validation in Athena will not work for the Hudi 0.14.0 requirement.
+
+# Sources and further reading
+
+Official XTable:
+
+- https://xtable.apache.org/
+- https://xtable.apache.org/docs
+- https://xtable.apache.org/docs/features-and-limitations/
+- https://xtable.apache.org/docs/how-to/
+- https://xtable.apache.org/docs/how-to-catalog-sync/
+- https://xtable.apache.org/docs/athena/
+- https://xtable.apache.org/docs/demo/docker/
+- https://xtable.apache.org/releases/downloads/
+- https://xtable.apache.org/releases/release-0.3.0-incubating/
+- https://xtable.apache.org/blog/
+- https://xtable.apache.org/blog/archive/
+- https://incubator.apache.org/clutch/xtable.html
+
+Useful external references:
+
+- https://docs.delta.io/delta-uniform/
+- https://aws.amazon.com/blogs/big-data/run-apache-xtable-in-aws-lambda-for-background-conversion-of-open-table-formats/
+- https://aws.amazon.com/blogs/big-data/run-apache-xtable-on-amazon-mwaa-to-translate-open-table-formats/
+- https://docs.onehouse.ai/product/external-integrations/catalogs/sync-troubleshooting/
