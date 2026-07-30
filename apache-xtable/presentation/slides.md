@@ -60,9 +60,9 @@ Metadata interoperability for Apache Hudi, Apache Iceberg, and Delta Lake
 
 ## Slide content
 
-- Warehouses gave governed analytics, but usually inside proprietary storage/compute.
+- Data warehouses made analytics reliable, but often kept data tied to one vendor.
 - Data lakes made storage cheaper and open.
-- Open table formats added transactional table semantics
+- Tools like Hudi, Iceberg, and Delta made data lakes easier to update and query safely.
 - Parquet became a common physical file format for analytical data.
 - Different teams and engines adopted different formats
 - Converting formats created duplication, cost, and synchronization work
@@ -355,51 +355,47 @@ table/
 
 ## Slide content
 
-Delta Lake UniForm:
-
-- Generates Iceberg/Hudi-readable metadata for Delta tables.
-- Strong option if Delta is already the source of truth.
-- More Delta-centered and governed inside Delta Lake.
-- Iceberg/Hudi side should be treated as read-only.
-
-Apache XTable:
-
-- Standalone Apache project.
-- Designed as a neutral space between table formats.
-- Omni-directional across Hudi, Iceberg, Delta, and future formats.
-- Better fit when the source of truth is not always Delta.
-
-Other alternatives:
-
-- Standardize the company on one table format.
-- Rewrite/convert data into another format.
-- Maintain duplicated datasets/pipelines.
-- Rely on each query engine's native support.
+| Tool / approach | What it solves | Main difference from XTable |
+|---|---|---|
+| **Apache XTable** | Makes one physical dataset readable as multiple table formats | Neutral metadata interoperability layer across Hudi, Iceberg, and Delta |
+| **Delta Lake UniForm** | Lets Iceberg/Hudi clients read a Delta table with one copy of the data | Closest alternative, but Delta is always the source of truth; Iceberg/Hudi are read-only |
+| **Trino Lakehouse connector** | Lets one query engine query and write Hudi, Iceberg, Delta, and Hive tables | One query interface; does not translate table metadata or make one table appear as every format |
+| **Apache Iceberg migration** | Moves or snapshots an existing table into Iceberg, sometimes without copying the files | A migration toward Iceberg, not ongoing multi-format interoperability |
+| **ETL / CDC replication pipelines** | Read one format and write another, keeping separate tables synchronized | The traditional option: more pipelines, possible extra storage, compute, and freshness delay |
 
 ## Speaker notes
 
-The comparison should be fair.
+The closest direct alternative is Delta Lake UniForm. The other rows solve an adjacent problem, not exactly the same problem.
 
-If the organization is all-in on Delta, UniForm may be a simpler choice. If the organization has mixed source formats or wants a neutral interoperability layer, XTable is more general.
+If the organization is all-in on Delta, UniForm may be a simpler choice. It generates Iceberg/Hudi metadata after Delta writes, but Delta remains the source of truth and external Iceberg/Hudi clients are read-only.
 
-The bigger decision is not just "XTable versus UniForm". It is:
+If the organization has mixed source formats or wants a neutral interoperability layer, XTable is more general.
 
-- one format standard
-- metadata interoperability
-- data duplication/conversion
+Trino is useful if the main need is one SQL engine that can read different existing formats. It does not replace XTable because it does not create translated metadata for other engines.
+
+Iceberg migration is useful when the final decision is "we are moving to Iceberg." It is not a long-term multi-format sync solution.
+
+ETL/CDC is the traditional solution: create and maintain copies. It can be the right choice when the target table needs transformations or full format-specific behaviour.
+
+Important: Hudi, Iceberg, and Delta Lake are not competitors to XTable. They are the table formats that XTable connects.
+
+Useful sentence to say:
+
+"UniForm is the closest alternative when Delta Lake is already the source of truth. XTable is broader because it is designed for interoperability across formats, not only from Delta."
+
+### Official research links
+
+- Delta Lake UniForm: <https://docs.delta.io/delta-uniform/>
+- Trino Lakehouse connector: <https://trino.io/docs/current/connector/lakehouse.html>
+- Apache Iceberg table migration: <https://iceberg.apache.org/docs/latest/table-migration/>
+- AWS Glue data lake frameworks: <https://docs.aws.amazon.com/glue/latest/dg/aws-glue-programming-etl-datalake-native-frameworks.html>
 
 ## What to add in the ODP
 
-- Move competitors later, after architecture/sync.
-- Do not use a random screenshot for competitors. Use a simple table:
-
-```text
-Option              Best when                         Risk
-XTable              mixed formats                     sync/semantic limits
-Delta UniForm       Delta is source of truth          Delta-centered
-Rewrite pipeline    need exact converted dataset      cost + freshness delay
-One standard        strong governance control         less flexibility
-```
+- Keep this after architecture and sync, so the audience already understands what XTable does.
+- Use the 5-row comparison table above.
+- Make the XTable and UniForm rows visually stronger; the other three are adjacent approaches, not direct competitors.
+- Add a small footnote: `Hudi, Iceberg, and Delta Lake are table formats, not XTable competitors.`
 
 # 13. Pros and cons
 
@@ -447,10 +443,8 @@ Good sentence to say:
 
 | Trade-off | What you gain | What you accept |
 |---|---|---|
-| Metadata-only sync | Faster and cheaper than rewriting data | Less complete than full format conversion |
-| Multiple readable formats | More engine/vendor flexibility | Single-writer/source-of-truth discipline |
-| Incremental sync | Smaller regular sync work | Depends on retained source history |
-| One copy of data | Lower storage and fewer pipelines | File lifecycle must be coordinated |
+| One sync, many formats | XTable can create Iceberg, Delta, or Hudi metadata from the same source table | The target formats may not update at exactly the same time if one sync succeeds and another fails |
+| Easier to plug into pipelines | XTable can run as part of your existing Spark or data jobs | Your team still owns the schedule, retries, alerts, and recovery when something goes wrong |
 
 ## Speaker notes
 
@@ -458,10 +452,8 @@ Keep this slide shorter than the pros/cons slide. It is here only to make the en
 
 If slide 13 is the practical pros/cons, slide 14 is the short technical summary:
 
-- speed vs completeness
-- interoperability vs write discipline
-- incremental sync vs retained-history dependency
-- one copy of data vs lifecycle coordination
+- one sync can produce many formats, but the targets are not updated as one atomic transaction
+- XTable fits into existing pipelines, but it does not replace scheduling, monitoring, and recovery
 
 ## What to add in the ODP
 

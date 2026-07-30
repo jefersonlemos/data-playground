@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1680" height="945" viewBox="0 0 1680 945">
+  <defs>
+    <linearGradient id="headerBlue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0878ee"/>
+      <stop offset="100%" stop-color="#0063cf"/>
+    </linearGradient>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="1.5" stdDeviation="1.5" flood-color="#001a4d" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <rect width="1680" height="945" fill="#ffffff"/>
+
+  <!-- Table frame -->
+  <rect x="38" y="26" width="1604" height="860" fill="#ffffff" stroke="#096cf0" stroke-width="2"/>
+  <rect x="38" y="26" width="1604" height="92" fill="url(#headerBlue)"/>
+
+  <!-- Grid -->
+  <line x1="505" y1="26" x2="505" y2="886" stroke="#096cf0" stroke-width="2"/>
+  <line x1="1052" y1="26" x2="1052" y2="886" stroke="#096cf0" stroke-width="2"/>
+  <line x1="38" y1="118" x2="1642" y2="118" stroke="#096cf0" stroke-width="2"/>
+  <line x1="38" y1="502" x2="1642" y2="502" stroke="#096cf0" stroke-width="2"/>
+
+  <!-- Header -->
+  <g font-family="Liberation Sans, Arial, sans-serif" font-size="42" font-weight="700" fill="#ffffff" filter="url(#softShadow)">
+    <text x="272" y="83" text-anchor="middle">TRADE-OFF</text>
+    <text x="778" y="83" text-anchor="middle">WHAT YOU GAIN</text>
+    <text x="1347" y="83" text-anchor="middle">WHAT YOU ACCEPT</text>
+  </g>
+
+  <!-- Row 1 icon: one sync, many formats -->
+  <g transform="translate(112 310)">
+    <circle cx="0" cy="0" r="52" fill="#d9efff"/>
+    <path d="M-20 -28 C-3 -45 24 -40 36 -17" fill="none" stroke="#1667d8" stroke-width="8" stroke-linecap="round"/>
+    <path d="M36 -17 L38 -42 L18 -29" fill="none" stroke="#1667d8" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M21 30 C3 47 -25 40 -36 17" fill="none" stroke="#1667d8" stroke-width="8" stroke-linecap="round"/>
+    <path d="M-36 17 L-38 42 L-18 29" fill="none" stroke="#1667d8" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="-39" cy="-2" r="9" fill="#1667d8"/>
+    <circle cx="0" cy="-2" r="9" fill="#1667d8"/>
+    <circle cx="39" cy="-2" r="9" fill="#1667d8"/>
+  </g>
+
+  <!-- Row 2 icon: pipeline orchestration -->
+  <g transform="translate(112 694)">
+    <circle cx="0" cy="0" r="52" fill="#d9efff"/>
+    <line x1="-42" y1="0" x2="42" y2="0" stroke="#1667d8" stroke-width="8" stroke-linecap="round"/>
+    <line x1="0" y1="-38" x2="0" y2="38" stroke="#1667d8" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="-42" cy="0" r="13" fill="#1667d8"/>
+    <circle cx="0" cy="-38" r="13" fill="#1667d8"/>
+    <circle cx="0" cy="38" r="13" fill="#1667d8"/>
+    <circle cx="42" cy="0" r="13" fill="#1667d8"/>
+    <circle cx="0" cy="0" r="17" fill="#ffffff" stroke="#1667d8" stroke-width="7"/>
+  </g>
+
+  <!-- Topic labels -->
+  <g font-family="Liberation Sans, Arial, sans-serif" font-size="39" font-weight="700" fill="#06164c">
+    <text x="188" y="297">
+      <tspan x="188" dy="0">One sync,</tspan>
+      <tspan x="188" dy="48">many formats</tspan>
+    </text>
+    <text x="188" y="681">
+      <tspan x="188" dy="0">Easier to plug</tspan>
+      <tspan x="188" dy="48">into pipelines</tspan>
+    </text>
+  </g>
+
+  <!-- Pros text -->
+  <g font-family="Liberation Sans, Arial, sans-serif" font-size="35" font-weight="400" fill="#111827">
+    <text x="540" y="238">
+      <tspan x="540" dy="0">XTable can create</tspan>
+      <tspan x="540" dy="45">Iceberg, Delta, or Hudi</tspan>
+      <tspan x="540" dy="45">metadata from the same</tspan>
+      <tspan x="540" dy="45">source table</tspan>
+    </text>
+    <text x="540" y="632">
+      <tspan x="540" dy="0">XTable can run as part</tspan>
+      <tspan x="540" dy="45">of your existing Spark</tspan>
+      <tspan x="540" dy="45">or data jobs</tspan>
+    </text>
+  </g>
+
+  <!-- Cons text -->
+  <g font-family="Liberation Sans, Arial, sans-serif" font-size="34" font-weight="400" fill="#111827">
+    <text x="1088" y="224">
+      <tspan x="1088" dy="0">The target formats may not update</tspan>
+      <tspan x="1088" dy="44">at exactly the same time if one sync</tspan>
+      <tspan x="1088" dy="44">succeeds and another fails</tspan>
+    </text>
+    <text x="1088" y="626">
+      <tspan x="1088" dy="0">Your team still owns the schedule,</tspan>
+      <tspan x="1088" dy="44">retries, alerts, and recovery when</tspan>
+      <tspan x="1088" dy="44">something goes wrong</tspan>
+    </text>
+  </g>
+</svg>
